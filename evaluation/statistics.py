@@ -39,7 +39,7 @@ def plot_statistic_comparisons(
     empirical_stats: Dict[str, np.ndarray],
     er_stats: Optional[Dict[str, np.ndarray]] = None,
     gnn_stats: Optional[Dict[str, np.ndarray]] = None,
-    save_path: Optional[str] = "./figs"
+    save_path: Optional[str] = None
 ):
     """
     Plots histograms of degree, clustering coefficient, and eigenvector centrality

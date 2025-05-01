@@ -18,9 +18,8 @@ def sample_erdos_renyi(num_samples=1000):
     train_loader, _, _ = load_dataset()
     train_graphs = [to_networkx(data, to_undirected=True) for data in train_loader.dataset]
 
-    plot_er_graph(train_graphs[0])
 
-    # Step 1: Collect node counts and densities
+    # Collect node counts and densities
     node_counts = []
     density_by_n = defaultdict(list)
 
@@ -66,11 +65,4 @@ def plot_er_graph(G, title="Sample Erdős–Rényi Graph"):
     plt.title(title)
     plt.axis('off')
     plt.show()
-
-
-
-if __name__=="__main__":
-	er_graphs = sample_erdos_renyi(num_samples=1000)
-	plot_er_graph(er_graphs[10])
-	
 

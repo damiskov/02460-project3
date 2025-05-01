@@ -11,13 +11,10 @@ train_loader, _, _ = load_dataset()
 empirical_graphs = [to_networkx(data, to_undirected=True) for data in train_loader.dataset]
 empirical_stats = compute_graph_statistics(empirical_graphs)
 
-
-
-
 # TODO: Sampling of baseline
 
-# er_graphs = sample_erdos_renyi(num_samples=1000)
-# er_stats = compute_graph_statistics(er_graphs)
+er_graphs = sample_erdos_renyi(num_samples=1000)
+er_stats = compute_graph_statistics(er_graphs)
 
 # TODO: Sampling of generative graphs
 
@@ -25,4 +22,5 @@ empirical_stats = compute_graph_statistics(empirical_graphs)
 # gnn_stats = compute_graph_statistics(gnn_graphs)
 
 # Plot comparisons
-plot_statistic_comparisons(empirical_stats)  # Add other statistics when finished
+
+plot_statistic_comparisons(empirical_stats=empirical_stats, er_stats=er_stats)  # Add other statistics when finished
