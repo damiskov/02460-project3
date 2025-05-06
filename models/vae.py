@@ -18,7 +18,9 @@ class GraphEncoder(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, latent_dim, num_layers=3):
         super().__init__()
         self.convs = torch.nn.ModuleList()
+
         for i in range(num_layers):
+
             in_c = in_channels if i == 0 else hidden_channels
             nn = torch.nn.Sequential(
                 torch.nn.Linear(in_c, hidden_channels),
@@ -27,13 +29,17 @@ class GraphEncoder(torch.nn.Module):
                 torch.nn.ReLU(),
             )
             self.convs.append(GINConv(nn))
+
+
         self.lin_mu = torch.nn.Linear(hidden_channels, latent_dim)
         self.lin_logvar = torch.nn.Linear(hidden_channels, latent_dim)
 
     def forward(self, x, edge_index, batch):
+        
         for conv in self.convs:
             x = conv(x, edge_index)
             x = F.relu(x)
+        
         # Global add pooling to get graph-level embedding
         g = global_add_pool(x, batch)
         mu = self.lin_mu(g)
@@ -42,13 +48,16 @@ class GraphEncoder(torch.nn.Module):
 
 
 class GraphDecoder(torch.nn.Module):
+    
     def __init__(self, latent_dim, hidden_channels, max_nodes):
+    
         super().__init__()
         self.lin1 = torch.nn.Linear(latent_dim, hidden_channels)
         self.lin2 = torch.nn.Linear(hidden_channels, max_nodes * max_nodes)
         self.max_nodes = max_nodes
 
     def forward(self, z):
+    
         h = F.relu(self.lin1(z))
         adj_logits = self.lin2(h)  # shape [batch, N*N]
         # reshape to [batch, N, N]
@@ -56,10 +65,12 @@ class GraphDecoder(torch.nn.Module):
         adj_logits = adj_logits.view(batch_size, self.max_nodes, self.max_nodes)
         # force symmetry
         adj_logits = (adj_logits + adj_logits.transpose(1, 2)) / 2
+    
         return adj_logits
 
 
 class GraphVAE(torch.nn.Module):
+    
     def __init__(
         self, in_channels, hidden_channels, latent_dim, max_nodes, num_layers=3
     ):
@@ -76,16 +87,19 @@ class GraphVAE(torch.nn.Module):
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
+
         mu, logvar = self.encoder(x, edge_index, batch)
         z = self.reparameterize(mu, logvar)
+        
         adj_logits = self.decoder(z)
 
         # Build target dense adjacency
         A = to_dense_adj(edge_index, batch, max_num_nodes=adj_logits.size(1))
+        
         return adj_logits, A, mu, logvar
 
     def loss(self, adj_logits, A, mu, logvar):
-        # Reconstruction: binary cross-entropy
+        # Reconstruction: BCE (with logits)
         recon_loss = F.binary_cross_entropy_with_logits(adj_logits, A, reduction="sum")
         # KL divergence
         kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -155,8 +169,6 @@ def generate_graphs_with_model(model, num_samples=1000, device="cpu", threshold=
             
         progress.update(1)
 
-        # if len(generated_graphs) >= num_samples:
-        #     break
 
     logger.info(
         f"Generated {len(generated_graphs)} connected graphs from {attempted} attempts"

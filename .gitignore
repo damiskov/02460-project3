@@ -15,3 +15,5 @@ figs/*.png
 test.py
 
 .ruff_cache
+
+.DS_store
