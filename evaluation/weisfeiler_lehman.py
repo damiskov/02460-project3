@@ -49,7 +49,7 @@ def compute_novel_unique_metrics(
         save_path: str|None = None):
     
     if save_path:
-        id = logger.add(f"{save_path}/metrics.log")
+        id = logger.add(f"{save_path}/metrics.log", mode="w")
     
     er_metrics = novelty_uniqueness(er_graphs, empirical_graphs)
     logger.info("Erdos-Renyi (ER):")
@@ -57,7 +57,7 @@ def compute_novel_unique_metrics(
     logger.info(f"Unique: {er_metrics['unique']}")
     logger.info(f"Novel and unique: {er_metrics['novel_unique']}")
 
-    gnn_metrics = novelty_uniqueness(gnn_graphs, gnn_graphs)
+    gnn_metrics = novelty_uniqueness(gnn_graphs, empirical_graphs)
     logger.info("Graph Neural Network (GNN):")
     logger.info(f"Novel: {gnn_metrics['novel']}")
     logger.info(f"Unique: {gnn_metrics['unique']}")
