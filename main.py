@@ -7,10 +7,11 @@ from torch_geometric.utils import to_networkx
 from utils.dataset_loader import load_full_dataset
 
 from models.erdos_renyi import sample_erdos_renyi
-from models.gnn_vae import GraphVAE, train_vae
+from models.vae import GraphVAE, train_vae
 from models.gnn_generator import generate_graphs_with_model
 
 from evaluation.statistics import compute_graph_statistics, plot_statistic_comparisons
+from evaluation.weisfeiler_lehman import compute_novel_unique_metrics
 
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,4 +56,14 @@ gnn_stats = compute_graph_statistics(gnn_graphs)
 # 5. Plot comparison of graph statistics
 plot_statistic_comparisons(
     empirical_stats=empirical_stats, er_stats=er_stats, gnn_stats=gnn_stats
+)
+
+
+
+# 6. Novelty/Uniqueness
+compute_novel_unique_metrics(
+    empirical_graphs,
+    er_graphs,
+    gnn_graphs,
+    save_path="figs"
 )
