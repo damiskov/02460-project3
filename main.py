@@ -48,6 +48,7 @@ from evaluation.weisfeiler_lehman import novelty_uniqueness
 
 
 
+
 # Load mutag
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -156,6 +157,7 @@ plot_graph_statistics(
 )
 
 
+
 # =========== WL tests ===========
 
 # Compute novelty and uniqueness
@@ -174,3 +176,12 @@ logger.success("Saved WL novelty/uniqueness metrics to graphs/wl_evaluation_metr
 
 logger.success("main.py complete")
 
+=======
+
+# 6. Novelty/Uniqueness
+compute_novel_unique_metrics(
+    empirical_graphs,
+    er_graphs,
+    gnn_graphs,
+    save_path="figs"
+)

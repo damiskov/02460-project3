@@ -11,14 +11,15 @@ def uniqueness(graphs: list[nx.Graph]) -> tuple[float, set]:
     hash_table = set()
     for G in graphs:
         hash_table.add(nx.weisfeiler_lehman_graph_hash(G))
-    return len(hash_table) / len(graphs), hash_table
+    return len(hash_table)/len(graphs), hash_table
+
 
 
 def novelty(graphs: list[nx.Graph], graphs_train: list[nx.Graph]):
     """
     Computes the novelty for a list of NetworkX graphs.
 
-    Returns the percentage of novel graphs and a hash table.
+    Returns the percentage of novel graphs and a hash table. 
     The hash table contains the hashes for graphs that are both novel and unique.
     """
     _, train_hash = uniqueness(graphs_train)
@@ -30,6 +31,7 @@ def novelty(graphs: list[nx.Graph], graphs_train: list[nx.Graph]):
             hash_table.add(h)
             n += 1
     return n / len(graphs), hash_table
+
 
 
 def novelty_uniqueness(
@@ -47,6 +49,27 @@ def compute_novel_unique_metrics(
     gnn_graphs: list[nx.Graph],
     save_path: str | None = None,
 ):
+    if save_path:
+        id = logger.add(f"{save_path}/metrics.log", mode="w")
+
+=======
+def novelty_uniqueness(graphs: list[nx.Graph], graphs_train: list[nx.Graph]) -> dict[str, float]:
+    unique_per, _ = uniqueness(graphs)
+    novel_per, hash_set = novelty(graphs, graphs_train)
+    nu_per = len(hash_set)/len(graphs)
+    return {
+        "novel": novel_per,
+        "unique": unique_per,
+        "novel_unique": nu_per
+    }
+
+
+def compute_novel_unique_metrics(
+        empirical_graphs: list[nx.Graph], 
+        er_graphs: list[nx.Graph], 
+        gnn_graphs: list[nx.Graph],
+        save_path: str|None = None):
+    
     if save_path:
         id = logger.add(f"{save_path}/metrics.log", mode="w")
 
