@@ -1,64 +1,182 @@
+# misc.
 from loguru import logger
 from tqdm import tqdm
+import networkx as nx
+import pickle
+import pandas as pd
 
+# config
+from config import TRAIN_VAE
+from config import SAMPLE_GRAPHS
+from config import NUM_SAMPLES
+
+from config import IN_CHANNELS
+from config import MAX_NODES
+from config import HIDDEN_CHANNELS
+from config import LATENT_DIM
+from config import EPOCHS
+from config import NUM_LAYERS
+
+# torch
 import torch
 from torch_geometric.utils import to_networkx
 
+# models
+from models.erdos_renyi import sample_erdos_renyi
+
+from models.gan import GraphGenerator
+from models.gan import GraphDiscriminator
+from models.gan import nx_to_data
+from models.gan import generate_graphs_with_gan
+
+from models.vae import GraphVAE
+from models.vae import train_vae
+from models.vae import generate_graphs_with_model
+
+# utils
 from utils.dataset_loader import load_full_dataset
 
-from models.erdos_renyi import sample_erdos_renyi
-from models.vae import GraphVAE, train_vae
-from models.gnn_generator import generate_graphs_with_model
+# evaluation
+from evaluation.statistics import compute_graph_statistics
+from evaluation.statistics import plot_graph_statistics
 
-from evaluation.statistics import compute_graph_statistics, plot_statistic_comparisons
-from evaluation.weisfeiler_lehman import compute_novel_unique_metrics
+from evaluation.weisfeiler_lehman import uniqueness
+from evaluation.weisfeiler_lehman import novelty
+from evaluation.weisfeiler_lehman import novelty_uniqueness
 
-# Set device
+
+
+
+
+
+# Load mutag
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# 1. Load the MUTAG dataset
 loader = load_full_dataset()
 
-# 2. Load empirical graphs
+# ========= Empirical Data =========
+
 empirical_graphs = [to_networkx(data, to_undirected=True) for data in loader.dataset]
 empirical_stats = compute_graph_statistics(empirical_graphs)
+plot_graph_statistics(
+    data=empirical_stats,
+    name="Empirical (MUTAG)",
+    color="cornflowerblue",
+    save_path="figs/mutag",
+)
 
-# 3. Generate Erdős–Rényi graphs (baseline)
-er_graphs = sample_erdos_renyi(num_samples=1000)
+# ========= Baseline - Erdos-Renyi =========
+
+if SAMPLE_GRAPHS:
+    er_graphs = sample_erdos_renyi(num_samples=1000)
+    with open("graphs/er/ER_graphs.pkl", "wb") as f:
+        pickle.dump(er_graphs, f)
+    logger.success("Saved generated graphs to graphs/ER_graphs.pkl")
+
+
+# load graphs
+with open("graphs/er/ER_graphs.pkl", "rb") as f:
+    er_graphs = pickle.load(f)
+
+logger.success("Loaded generated graphs from graphs/ER_graphs.pkl")
+
 er_stats = compute_graph_statistics(er_graphs)
+plot_graph_statistics(
+    data=er_stats, name="Erdős–Rényi", color="lightcoral", save_path="figs/er"
+)
 
-# 4. Train GraphVAE and generate graphs
-logger.info("\nTraining GraphVAE...")
-in_channels = loader.dataset[0].num_node_features
-max_nodes = max(g.num_nodes for g in loader.dataset)
+# ========= Generative Model - VAE ==========
 
-logger.debug(f"In channels: {in_channels}")
-logger.debug(f"max nodes: {max_nodes}")
 
-model = GraphVAE(
-    in_channels=in_channels, hidden_channels=64, latent_dim=32, max_nodes=max_nodes
-).to(device)
+if TRAIN_VAE:
+    logger.info("Training GraphVAE...")
 
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    model = GraphVAE(
+        in_channels=IN_CHANNELS,
+        hidden_channels=HIDDEN_CHANNELS,
+        latent_dim=LATENT_DIM,
+        max_nodes=MAX_NODES,
+        num_layers=NUM_LAYERS,  # Increased number of layers
+    ).to(device)
 
-# Training loop
-epochs = 500
-progress_bar = tqdm(range(1, epochs + 1), desc="Training")
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-for epoch in progress_bar:
-    loss = train_vae(model, loader, optimizer, device)
-    progress_bar.set_description(f"Epoch {epoch:03d}, Loss: {loss:.4f}")
+    # Training loop
+    progress_bar = tqdm(range(1, EPOCHS + 1), desc="Training")
 
-# Generate graphs from the trained VAE
-gnn_graphs = generate_graphs_with_model(model, num_samples=1000, device=device)
-gnn_stats = compute_graph_statistics(gnn_graphs)
+    for epoch in progress_bar:
+        loss = train_vae(model, loader, optimizer, device)
+        progress_bar.set_description(f"Epoch {epoch:03d}, Loss: {loss:.4f}")
 
-# 5. Plot comparison of graph statistics
-plot_statistic_comparisons(
-    empirical_stats=empirical_stats, er_stats=er_stats, gnn_stats=gnn_stats
+    torch.save(model.state_dict(), "models/graph_vae.pt")
+    logger.success("Saved GraphVAE model to models/graph_vae.pt")
+
+else:
+    model = GraphVAE(
+        in_channels=IN_CHANNELS,
+        hidden_channels=HIDDEN_CHANNELS,
+        latent_dim=LATENT_DIM,
+        max_nodes=MAX_NODES,
+        num_layers=NUM_LAYERS,  # Increased number of layers
+    )
+
+    try:
+        model.load_state_dict(torch.load("models/graph_vae.pt", map_location="cpu"))
+    except:
+        raise NotImplementedError("Can not find state dict - please train GraphVAE")
+
+    logger.success("Loaded trained GraphVAE model for sampling")
+
+
+if SAMPLE_GRAPHS:
+    vae_graphs = generate_graphs_with_model(
+        model, max_nodes=MAX_NODES, num_samples=NUM_SAMPLES, device=device
+    )
+
+    with open("graphs/vae/GraphVAE_graphs.pkl", "wb") as f:
+        pickle.dump(vae_graphs, f)
+
+    logger.success("Saved generated graphs to graphs/GraphVAE_graphs.pkl")
+
+
+
+# load graphs from pickle
+with open("graphs/vae/GraphVAE_graphs.pkl", "rb") as f:
+    vae_graphs = pickle.load(f)
+logger.success("Loaded generated graphs from graphs/ER_graphs.pkl")
+
+
+# Compute stats
+vae_stats = compute_graph_statistics(vae_graphs)
+# Plot comparison of graph statistics
+plot_graph_statistics(
+    data=vae_stats,
+    name="Generated Graphs (VAE)",
+    color="orchid",
+    save_path="figs/gen/vae",
 )
 
 
+
+# =========== WL tests ===========
+
+# Compute novelty and uniqueness
+er_metrics = novelty_uniqueness(er_graphs, empirical_graphs)
+vae_metrics = novelty_uniqueness(vae_graphs, empirical_graphs)
+
+# Create and log dataframe
+df = pd.DataFrame([er_metrics, vae_metrics], index=["Erdős–Rényi", "GraphVAE"])
+df *= 100  # convert to percentages
+df = df.round(2)
+
+logger.info("\n" + df.to_string())
+
+df.to_csv("graphs/wl_evaluation_metrics.csv")
+logger.success("Saved WL novelty/uniqueness metrics to graphs/wl_evaluation_metrics.csv")
+
+logger.success("main.py complete")
+
+=======
 
 # 6. Novelty/Uniqueness
 compute_novel_unique_metrics(
