@@ -3,6 +3,7 @@ from loguru import logger
 from tqdm import tqdm
 import networkx as nx
 import pickle
+import pandas as pd
 
 # config
 from config import TRAIN_VAE
@@ -38,6 +39,12 @@ from utils.dataset_loader import load_full_dataset
 # evaluation
 from evaluation.statistics import compute_graph_statistics
 from evaluation.statistics import plot_graph_statistics
+
+from evaluation.weisfeiler_lehman import uniqueness
+from evaluation.weisfeiler_lehman import novelty
+from evaluation.weisfeiler_lehman import novelty_uniqueness
+
+
 
 
 
@@ -151,5 +158,19 @@ plot_graph_statistics(
 
 # =========== WL tests ===========
 
+# Compute novelty and uniqueness
+er_metrics = novelty_uniqueness(er_graphs, empirical_graphs)
+vae_metrics = novelty_uniqueness(vae_graphs, empirical_graphs)
+
+# Create and log dataframe
+df = pd.DataFrame([er_metrics, vae_metrics], index=["Erdős–Rényi", "GraphVAE"])
+df *= 100  # convert to percentages
+df = df.round(2)
+
+logger.info("\n" + df.to_string())
+
+df.to_csv("graphs/wl_evaluation_metrics.csv")
+logger.success("Saved WL novelty/uniqueness metrics to graphs/wl_evaluation_metrics.csv")
 
 logger.success("main.py complete")
+
