@@ -2,9 +2,11 @@
 from loguru import logger
 from tqdm import tqdm
 import networkx as nx
+import pickle
 
 # config
 from config import TRAIN_VAE
+from config import SAMPLE_GRAPHS
 from config import NUM_SAMPLES
 
 from config import IN_CHANNELS
@@ -57,7 +59,19 @@ plot_graph_statistics(
 
 # ========= Baseline - Erdos-Renyi =========
 
-er_graphs = sample_erdos_renyi(num_samples=1000)
+if SAMPLE_GRAPHS:
+    er_graphs = sample_erdos_renyi(num_samples=1000)
+    with open("graphs/er/ER_graphs.pkl", "wb") as f:
+        pickle.dump(er_graphs, f)
+    logger.success("Saved generated graphs to graphs/ER_graphs.pkl")
+
+
+# load graphs
+with open("graphs/er/ER_graphs.pkl", "rb") as f:
+    er_graphs = pickle.load(f)
+
+logger.success("Loaded generated graphs from graphs/ER_graphs.pkl")
+
 er_stats = compute_graph_statistics(er_graphs)
 plot_graph_statistics(
     data=er_stats, name="Erdős–Rényi", color="lightcoral", save_path="figs/er"
@@ -106,18 +120,26 @@ else:
     logger.success("Loaded trained GraphVAE model for sampling")
 
 
-logger.info("Begin sampling...")
+if SAMPLE_GRAPHS:
+    vae_graphs = generate_graphs_with_model(
+        model, max_nodes=MAX_NODES, num_samples=NUM_SAMPLES, device=device
+    )
 
-# ========= Sampling =========
+    with open("graphs/vae/GraphVAE_graphs.pkl", "wb") as f:
+        pickle.dump(vae_graphs, f)
 
-vae_graphs = generate_graphs_with_model(
-    model, max_nodes=MAX_NODES, num_samples=NUM_SAMPLES, device=device
-)
+    logger.success("Saved generated graphs to graphs/GraphVAE_graphs.pkl")
+
+
+
+# load graphs from pickle
+with open("graphs/vae/GraphVAE_graphs.pkl", "rb") as f:
+    vae_graphs = pickle.load(f)
+logger.success("Loaded generated graphs from graphs/ER_graphs.pkl")
+
 
 # Compute stats
-
 vae_stats = compute_graph_statistics(vae_graphs)
-
 # Plot comparison of graph statistics
 plot_graph_statistics(
     data=vae_stats,
