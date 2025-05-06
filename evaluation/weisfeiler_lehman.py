@@ -52,7 +52,7 @@ def compute_novel_unique_metrics(
     if save_path:
         id = logger.add(f"{save_path}/metrics.log", mode="w")
 
-=======
+
 def novelty_uniqueness(graphs: list[nx.Graph], graphs_train: list[nx.Graph]) -> dict[str, float]:
     unique_per, _ = uniqueness(graphs)
     novel_per, hash_set = novelty(graphs, graphs_train)

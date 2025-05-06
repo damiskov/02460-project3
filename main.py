@@ -157,7 +157,6 @@ plot_graph_statistics(
 )
 
 
-
 # =========== WL tests ===========
 
 # Compute novelty and uniqueness
@@ -175,13 +174,3 @@ df.to_csv("graphs/wl_evaluation_metrics.csv")
 logger.success("Saved WL novelty/uniqueness metrics to graphs/wl_evaluation_metrics.csv")
 
 logger.success("main.py complete")
-
-=======
-
-# 6. Novelty/Uniqueness
-compute_novel_unique_metrics(
-    empirical_graphs,
-    er_graphs,
-    gnn_graphs,
-    save_path="figs"
-)
