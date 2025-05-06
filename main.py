@@ -181,12 +181,16 @@ logger.debug(f"max nodes: {max_nodes}")
 
 # Hyperparameters
 
-hidden_channels = 64
-latent_dim = 32
+hidden_channels = 128
+latent_dim = 64
 
 
 model = GraphVAE(
-    in_channels=in_channels, hidden_channels=hidden_channels, latent_dim=latent_dim, max_nodes=max_nodes
+    in_channels=in_channels,
+    hidden_channels=hidden_channels,
+    latent_dim=latent_dim,
+    max_nodes=max_nodes,
+    num_layers=5
 ).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -204,7 +208,7 @@ logger.success("Completed training GraphVAE")
 
 logger.info("Begin sampling...")
 # Generate graphs from the trained VAE
-vae_graphs = generate_graphs_with_model(model, num_samples=100, device=device)
+vae_graphs = generate_graphs_with_model(model,max_nodes=max_nodes, num_samples=100, device=device)
 vae_stats = compute_graph_statistics(vae_graphs)
 
 # 5. Plot comparison of graph statistics

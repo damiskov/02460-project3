@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GINConv, global_add_pool
 from torch_geometric.utils import to_dense_adj, dense_to_sparse
@@ -54,12 +55,16 @@ class GraphDecoder(torch.nn.Module):
         super().__init__()
         self.lin1 = torch.nn.Linear(latent_dim, hidden_channels)
         self.lin2 = torch.nn.Linear(hidden_channels, max_nodes * max_nodes)
+
+
         self.max_nodes = max_nodes
 
     def forward(self, z):
     
         h = F.relu(self.lin1(z))
         adj_logits = self.lin2(h)  # shape [batch, N*N]
+
+
         # reshape to [batch, N, N]
         batch_size = z.size(0)
         adj_logits = adj_logits.view(batch_size, self.max_nodes, self.max_nodes)
@@ -67,6 +72,49 @@ class GraphDecoder(torch.nn.Module):
         adj_logits = (adj_logits + adj_logits.transpose(1, 2)) / 2
     
         return adj_logits
+
+
+# |
+# |
+# |
+# |
+# |
+# |
+# v
+# Decoder with skip connections + extra layer
+
+
+# class GraphDecoder(torch.nn.Module):
+#     def __init__(self, latent_dim, hidden_channels, max_nodes):
+#         super().__init__()
+#         self.max_nodes = max_nodes
+
+#         self.fc1 = torch.nn.Linear(latent_dim, hidden_channels)
+#         self.fc2 = torch.nn.Linear(hidden_channels, hidden_channels)
+#         self.fc3 = torch.nn.Linear(hidden_channels, max_nodes * max_nodes)
+
+#         self.norm = nn.LayerNorm(hidden_channels)
+
+#     def forward(self, z):
+#         h = F.relu(self.fc1(z))
+        
+#         # Skip connection: h + fc2(h)
+#         residual = h
+#         h = F.relu(self.fc2(h))
+#         h = self.norm(h + residual)
+
+#         adj_logits = self.fc3(h)
+
+#         # Reshape to [batch, N, N]
+#         batch_size = z.size(0)
+#         adj_logits = adj_logits.view(batch_size, self.max_nodes, self.max_nodes)
+
+#         # Symmetrize
+#         adj_logits = (adj_logits + adj_logits.transpose(1, 2)) / 2
+
+#         return adj_logits
+
+
 
 
 class GraphVAE(torch.nn.Module):
@@ -125,53 +173,94 @@ def train_vae(model, loader, optimizer, device):
 
 # ========== Sampling ============
 
-def generate_graphs_with_model(model, num_samples=1000, device="cpu", threshold=0.5):
+# def generate_graphs_with_model(model,max_nodes, num_samples=1000, device="cpu", threshold=0.5):
+#     """
+#     Samples graphs from a trained GraphVAE model.
+
+#     Args:
+#         model: Trained GraphVAE model
+#         num_samples: Number of graphs to generate
+#         device: Device to run sampling on
+#         threshold: Sigmoid threshold for binarizing edges
+
+#     Returns:
+#         A list of NetworkX Graphs
+#     """
+#     model.eval()
+#     generated_graphs = []
+
+#     attempted = 0
+#     progress = tqdm(total=num_samples, desc="Generating graphs")
+
+#     while len(generated_graphs) < num_samples:
+#         attempted += 1
+
+#         z = torch.randn(1, model.encoder.lin_mu.out_features).to(device)
+#         adj_logits = model.decoder(z)  # shape [1, N, N]
+#         adj_probs = torch.sigmoid(adj_logits)[0]  # shape [N, N]
+
+#         # Binarize using threshold
+#         adj_bin = (adj_probs > threshold).float()
+
+#         # Remove self-loops
+#         adj_bin.fill_diagonal_(0)
+
+#         # Convert to networkx graph
+#         G = nx.from_numpy_array(adj_bin.cpu().numpy())
+
+#         # Skip disconnected graphs if needed
+#         if nx.is_connected(G):
+#             generated_graphs.append(G)
+            
+#         progress.update(1)
+
+
+#     logger.info(
+#         f"Generated {len(generated_graphs)} connected graphs from {attempted} attempts"
+#     )
+
+#     return generated_graphs
+
+
+def generate_graphs_with_model(model, max_nodes, num_samples=1000, device="cpu", threshold=0.5, batch_size=32):
     """
-    Samples graphs from a trained GraphVAE model.
-
-    Args:
-        model: Trained GraphVAE model
-        num_samples: Number of graphs to generate
-        device: Device to run sampling on
-        threshold: Sigmoid threshold for binarizing edges
-
-    Returns:
-        A list of NetworkX Graphs
+    Efficiently sample connected graphs from a trained GraphVAE model.
     """
     model.eval()
     generated_graphs = []
-
-    max_nodes = model.decoder.lin2.out_features
-    max_nodes = int(max_nodes**0.5)  # since output is flattened N*N
-
     attempted = 0
-    progress = tqdm(total=num_samples, desc="Generating graphs")
+    progress = tqdm(desc="Generating connected graphs")
 
-    while len(generated_graphs) < num_samples:
-        attempted += 1
+    with torch.no_grad():
+        while len(generated_graphs) < num_samples:
+            z = torch.randn(batch_size, model.encoder.lin_mu.out_features).to(device)
+            adj_logits = model.decoder(z)  # shape [B, N, N]
+            adj_probs = torch.sigmoid(adj_logits)
 
-        z = torch.randn(1, model.encoder.lin_mu.out_features).to(device)
-        adj_logits = model.decoder(z)  # shape [1, N, N]
-        adj_probs = torch.sigmoid(adj_logits)[0]  # shape [N, N]
+            # Binarize and zero diagonal
+            adj_bin = (adj_probs > threshold).float()
+            adj_bin[:, torch.arange(max_nodes), torch.arange(max_nodes)] = 0  # remove self-loops
 
-        # Binarize using threshold
-        adj_bin = (adj_probs > threshold).float()
+            # Convert to networkx and filter
+            for i in range(batch_size):
+                attempted += 1
+                adj_np = adj_bin[i].cpu().numpy()
+                G = nx.from_numpy_array(adj_np)
 
-        # Remove self-loops
-        adj_bin.fill_diagonal_(0)
+                if nx.is_connected(G):
+                    generated_graphs.append(G)
+                    progress.update(1)
 
-        # Convert to networkx graph
-        G = nx.from_numpy_array(adj_bin.cpu().numpy())
+                progress.set_postfix({
+                    "accepted": len(generated_graphs),
+                    "attempted": attempted,
+                    "accept_rate": f"{len(generated_graphs)/max(attempted,1):.2%}"
+                })
 
-        # Skip disconnected graphs if needed
-        if nx.is_connected(G):
-            generated_graphs.append(G)
-            
-        progress.update(1)
+                if len(generated_graphs) >= num_samples:
+                    break
 
 
-    logger.info(
-        f"Generated {len(generated_graphs)} connected graphs from {attempted} attempts"
-    )
 
+    logger.info(f"Generated {len(generated_graphs)} connected graphs from {attempted} attempts")
     return generated_graphs
