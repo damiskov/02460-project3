@@ -7,7 +7,7 @@ from torch_geometric.utils import to_networkx
 from utils.dataset_loader import load_full_dataset
 
 from models.erdos_renyi import sample_erdos_renyi
-from models.gnn_vae import GraphVAE, train_vae
+from models.vae import GraphVAE, train_vae
 from models.gnn_generator import generate_graphs_with_model
 
 from evaluation.statistics import compute_graph_statistics, plot_statistic_comparisons

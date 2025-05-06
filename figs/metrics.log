@@ -1,0 +1,8 @@
+2025-05-06 18:26:15.230 | INFO     | evaluation.weisfeiler_lehman:compute_novel_unique_metrics:55 - Erdos-Renyi (ER):
+2025-05-06 18:26:15.230 | INFO     | evaluation.weisfeiler_lehman:compute_novel_unique_metrics:56 - Novel: 1.0
+2025-05-06 18:26:15.230 | INFO     | evaluation.weisfeiler_lehman:compute_novel_unique_metrics:57 - Unique: 0.998
+2025-05-06 18:26:15.230 | INFO     | evaluation.weisfeiler_lehman:compute_novel_unique_metrics:58 - Novel and unique: 0.998
+2025-05-06 18:26:15.558 | INFO     | evaluation.weisfeiler_lehman:compute_novel_unique_metrics:61 - Graph Neural Network (GNN):
+2025-05-06 18:26:15.558 | INFO     | evaluation.weisfeiler_lehman:compute_novel_unique_metrics:62 - Novel: 0.0
+2025-05-06 18:26:15.558 | INFO     | evaluation.weisfeiler_lehman:compute_novel_unique_metrics:63 - Unique: 0.496
+2025-05-06 18:26:15.558 | INFO     | evaluation.weisfeiler_lehman:compute_novel_unique_metrics:64 - Novel and unique: 0.0
