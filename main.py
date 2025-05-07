@@ -44,11 +44,6 @@ from evaluation.weisfeiler_lehman import uniqueness
 from evaluation.weisfeiler_lehman import novelty
 from evaluation.weisfeiler_lehman import novelty_uniqueness
 
-
-
-
-
-
 # Load mutag
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -139,7 +134,6 @@ if SAMPLE_GRAPHS:
     logger.success("Saved generated graphs to graphs/GraphVAE_graphs.pkl")
 
 
-
 # load graphs from pickle
 with open("graphs/vae/GraphVAE_graphs.pkl", "rb") as f:
     vae_graphs = pickle.load(f)
@@ -171,6 +165,8 @@ df = df.round(2)
 logger.info("\n" + df.to_string())
 
 df.to_csv("graphs/wl_evaluation_metrics.csv")
-logger.success("Saved WL novelty/uniqueness metrics to graphs/wl_evaluation_metrics.csv")
+logger.success(
+    "Saved WL novelty/uniqueness metrics to graphs/wl_evaluation_metrics.csv"
+)
 
 logger.success("main.py complete")

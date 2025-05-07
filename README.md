@@ -1,19 +1,7 @@
-<pre><code>project_3/
-├── data/                       # MUTAG dataset
-│
-├── models/
-│   ├── erdos_renyi.py          # Code to generate baseline graphs
-│   ├── gnn_generator.py        # Deep generative model code
-│   └── __init__.py
-│
-├── evaluation/
-│   ├── weisfeiler_lehman.py    # Code for WL test for graph uniqueness
-│   ├── statistics.py           # Degree, clustering coefficient, eigenvector centrality
-│   └── __init__.py
-│
-├── scripts/
-│   └── evaluate_graphs.py
-│
-├── utils/
-│   └── dataset_loader.py       # Load MUTAG dataset
-</code></pre>
+# 02460 - Mini Project 3
+
+Implementations for the third mini project in 02460 - Advanced Machine Learning.
+
+To recreate results found in the report: simply clone this repository and run `main.py`.
+
+Re-training and re-sampling can be done by tweaking the relevant parameters in `config.py`.

@@ -128,6 +128,6 @@ def plot_graph_statistics(
 
         if save_path:
             filename = f"{stat}_distribution.png"
-            plt.savefig(f"{save_path}/{filename}")
+            plt.savefig(f"{save_path}/{filename}", dpi=300)
         else:
             plt.show()
