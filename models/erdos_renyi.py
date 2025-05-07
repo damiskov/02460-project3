@@ -81,54 +81,6 @@ def sample_erdos_renyi(loader=None, num_samples=1000, batch_size=32):
     return er_graphs
 
 
-# def sample_erdos_renyi(loader=None, num_samples=1000):
-#     loader = load_full_dataset()
-#     graphs = [to_networkx(data, to_undirected=True) for data in loader.dataset]
-
-#     # Collect node counts and densities
-
-#     node_counts = []
-#     density_by_n = defaultdict(list)
-
-#     for g in graphs:
-#         N = g.number_of_nodes()
-#         E = g.number_of_edges()
-
-#         # Guard for degenerate graphs
-
-#         if N <= 1:
-#             logger.warning(f"Skipping degenerate graph")
-#             continue
-
-#         density = 2 * E / (N * (N - 1))
-#         node_counts.append(N)
-#         density_by_n[N].append(density)
-
-#     # Convert node_counts to tensor for sampling
-#     node_counts_tensor = torch.tensor(node_counts)
-#     unique_node_counts, counts = torch.unique(node_counts_tensor, return_counts=True)
-#     probs = counts.float() / counts.sum()
-
-#     # Sampling
-
-#     er_graphs = []
-
-#     for _ in tqdm(range(num_samples), desc="Sampling Erdős–Rényi graphs"):
-#         # Sample N from empirical distribution
-#         N = int(unique_node_counts[torch.multinomial(probs, 1)])
-
-#         # Estimate average density for this N
-#         avg_density = np.mean(density_by_n[N])
-#         p = min(max(avg_density, 0.001), 1.0)  # clip to avoid degenerate graphs
-
-#         # Sample Erdos-Renyi graph
-#         G = nx.erdos_renyi_graph(n=N, p=p)
-#         er_graphs.append(G)
-
-#     logger.success(f"Sampled {len(er_graphs)} Erdős–Rényi graphs.")
-#     return er_graphs
-
-
 # ====== Plotting =====
 
 
