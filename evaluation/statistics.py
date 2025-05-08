@@ -38,88 +38,138 @@ def compute_graph_statistics(graphs: List[nx.Graph]) -> Dict[str, np.ndarray]:
     }
 
 
-def plot_statistic_comparisons(
-    empirical_stats: Dict[str, np.ndarray],
-    er_stats: Optional[Dict[str, np.ndarray]] = None,
-    gnn_stats: Optional[Dict[str, np.ndarray]] = None,
-    save_path: Optional[str] = None,
-):
-    """
-    Plots histograms of degree, clustering coefficient, and eigenvector centrality
-    for empirical, Erdős–Rényi, and generative model graphs.
+# def plot_statistic_comparisons(
+#     empirical_stats: Dict[str, np.ndarray],
+#     er_stats: Optional[Dict[str, np.ndarray]] = None,
+#     gnn_stats: Optional[Dict[str, np.ndarray]] = None,
+#     save_path: Optional[str] = None,
+# ):
+#     """
+#     Plots histograms of degree, clustering coefficient, and eigenvector centrality
+#     for empirical, Erdős–Rényi, and generative model graphs.
 
-    Optionally saves the plots to disk.
-    """
-    stats = ["degree", "clustering", "eigenvector_centrality"]
-    titles = ["Node Degree", "Clustering Coefficient", "Eigenvector Centrality"]
+#     Optionally saves the plots to disk.
+#     """
+#     stats = ["degree", "clustering", "eigenvector_centrality"]
+#     titles = ["Node Degree", "Clustering Coefficient", "Eigenvector Centrality"]
 
-    for stat, title in zip(stats, titles):
-        plt.figure(figsize=(8, 5))
+#     for stat, title in zip(stats, titles):
+#         plt.figure(figsize=(8, 5))
 
-        if len(empirical_stats[stat]) > 0:
-            plt.hist(
-                empirical_stats[stat],
-                bins=30,
-                alpha=0.5,
-                label="Empirical (MUTAG)",
-                density=True,
-            )
-        else:
-            logger.warning(f"Empirical (MUTAG) {title} is empty")
+#         if len(empirical_stats[stat]) > 0:
+#             plt.hist(
+#                 empirical_stats[stat],
+#                 bins=30,
+#                 alpha=0.5,
+#                 label="Empirical (MUTAG)",
+#                 density=True,
+#             )
+#         else:
+#             logger.warning(f"Empirical (MUTAG) {title} is empty")
 
-        if er_stats and len(er_stats[stat]) > 0:
-            plt.hist(
-                er_stats[stat], bins=30, alpha=0.5, label="Erdős–Rényi", density=True
-            )
-        else:
-            logger.warning(f"Erdős–Rényi {title} is empty")
+#         if er_stats and len(er_stats[stat]) > 0:
+#             plt.hist(
+#                 er_stats[stat], bins=30, alpha=0.5, label="Erdős–Rényi", density=True
+#             )
+#         else:
+#             logger.warning(f"Erdős–Rényi {title} is empty")
 
-        if gnn_stats and len(gnn_stats[stat]) > 0:
-            plt.hist(
-                gnn_stats[stat],
-                bins=30,
-                alpha=0.5,
-                label="Generative Model",
-                density=True,
-            )
-        else:
-            logger.warning(f"Generative Model {title} is empty")
+#         if gnn_stats and len(gnn_stats[stat]) > 0:
+#             plt.hist(
+#                 gnn_stats[stat],
+#                 bins=30,
+#                 alpha=0.5,
+#                 label="Generative Model",
+#                 density=True,
+#             )
+#         else:
+#             logger.warning(f"Generative Model {title} is empty")
 
-        plt.title(f"Distribution of {title}")
-        plt.xlabel(title)
-        plt.ylabel("Density")
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
+#         plt.title(f"Distribution of {title}")
+#         plt.xlabel(title)
+#         plt.ylabel("Density")
+#         plt.legend()
+#         plt.grid(True)
+#         plt.tight_layout()
 
-        if save_path:
-            filename = f"{stat}_distribution.png"
-            plt.savefig(f"{save_path}/{filename}")
-        else:
-            plt.show()
+#         if save_path:
+#             filename = f"{stat}_distribution.png"
+#             plt.savefig(f"{save_path}/{filename}")
+#         else:
+#             plt.show()
 
+
+# def plot_graph_statistics(
+#     data: Dict[str, np.ndarray], name: str, color: str, save_path: Optional[str] = None
+# ):
+#     """
+#     Plots histograms of degree, clustering coefficient, and eigenvector centrality
+
+#     Optionally saves the plots to disk.
+#     """
+#     stats = ["degree", "clustering", "eigenvector_centrality"]
+#     titles = ["Node Degree", "Clustering Coefficient", "Eigenvector Centrality"]
+
+#     for stat, title in zip(stats, titles):
+#         plt.figure(figsize=(8, 5))
+
+#         if len(data[stat]) > 0:
+#             plt.hist(
+#                 data[stat], bins=30, alpha=1, label=name, density=True, color=color
+#             )
+#         else:
+#             logger.warning(f"statistic {title} for {name} is empty")
+
+#         plt.xlabel(title)
+#         plt.ylabel("Density")
+#         plt.legend()
+#         plt.grid(True)
+#         plt.tight_layout()
+
+#         if save_path:
+#             filename = f"{stat}_distribution.png"
+#             plt.savefig(f"{save_path}/{filename}", dpi=300)
+#         else:
+#             plt.show()
 
 def plot_graph_statistics(
     data: Dict[str, np.ndarray], name: str, color: str, save_path: Optional[str] = None
 ):
     """
     Plots histograms of degree, clustering coefficient, and eigenvector centrality
+    with consistent bin edges for each metric.
 
     Optionally saves the plots to disk.
     """
+    import numpy as np
+    import matplotlib.pyplot as plt
+
     stats = ["degree", "clustering", "eigenvector_centrality"]
     titles = ["Node Degree", "Clustering Coefficient", "Eigenvector Centrality"]
+
+    # Define shared bin edges for each metric
+    bins_dict = {
+        "degree": np.linspace(0, 10, 30),                
+        "clustering": np.linspace(0, 1, 30),            
+        "eigenvector_centrality": np.linspace(0, 1, 30) 
+    }
 
     for stat, title in zip(stats, titles):
         plt.figure(figsize=(8, 5))
 
         if len(data[stat]) > 0:
             plt.hist(
-                data[stat], bins=30, alpha=1, label=name, density=True, color=color
+                data[stat],
+                bins=bins_dict[stat],
+                alpha=1,
+                label=name,
+                density=True,
+                color=color,
             )
         else:
             logger.warning(f"statistic {title} for {name} is empty")
 
+        plt.title(f"{title} Distribution ({name})")
         plt.xlabel(title)
         plt.ylabel("Density")
         plt.legend()
